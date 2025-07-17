@@ -1,0 +1,9 @@
+[package]
+name = "ghostly"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+raylib = { version = "5.5.0", features = [] }
+mlua = { version = "0.10.0", features = ["luajit"] }
+cgmath = "0.18.0"
