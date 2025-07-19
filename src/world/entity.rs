@@ -1,10 +1,11 @@
 use cgmath::{Vector3, Zero};
+use serde::{Deserialize, Serialize};
 
 /// The type of an entity id.
 pub type EntityId = usize;
 
 /// Represents an entity in the world.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Entity {
     pub(super) id: EntityId,
     pub(super) enabled: bool,
@@ -13,10 +14,14 @@ pub struct Entity {
 
 impl Entity {
     /// Get the entity id.
-    pub fn id(&self) -> EntityId { self.id }
+    pub fn id(&self) -> EntityId {
+        self.id
+    }
     /// Check whether the entity is enabled.
-    pub fn enabled(&self) -> bool { self.enabled }
-    
+    pub fn enabled(&self) -> bool {
+        self.enabled
+    }
+
     /// (Re)enable an entity.
     pub fn enable(&mut self) {
         self.enabled = true;
@@ -28,14 +33,14 @@ impl Entity {
 }
 
 /// The data in an entity.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EntityData {
     pub role: String,
     pub position: Vector3<f32>,
 }
 
 impl Default for EntityData {
-    fn default() -> Self { 
+    fn default() -> Self {
         Self {
             role: Default::default(),
             position: Vector3::zero(),
