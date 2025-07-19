@@ -1,22 +1,36 @@
-use cgmath::Vector3;
-use ghostly::world::{World, entity::EntityData};
+use std::{cell::RefCell, rc::Rc};
+use ghostly::{lua::world::LuaWorld, world::World};
+use mlua::Lua;
 use raylib::prelude::{Color, KeyboardKey, RaylibDraw, RaylibDrawHandle, RaylibHandle};
 
 fn main() {
-    let mut world = World::default();
-    world.entities.spawn(EntityData {
-        role: "player".into(),
-        position: Vector3::new(1280f32 / 2f32, 720f32 / 2f32, 0f32),
-    });
+    let world = {
+        let world = World::default();
+        Rc::new(RefCell::new(world))
+    };
+
+    let lua = Lua::new();
+    let globals = lua.globals();
+
+    let lua_world_ref = LuaWorld(world.clone());
+    
+    let script = std::fs::read_to_string(format!("{}/assets/scripts/debug.lua", env!("CARGO_MANIFEST_DIR"))).unwrap();
+    lua.load(script).exec().unwrap();
+
+    let script_init: mlua::Function = globals.get("Init").unwrap();
+    let script_update: mlua::Function = globals.get("Update").unwrap();
 
     let (mut rl, thread) = raylib::init()
         .vsync()
-        .fullscreen()
+        //.fullscreen()
         .size(1280, 720)
         .title("Ghostly")
         .build();
 
+    script_init.call::<()>(lua_world_ref.clone()).unwrap();
+
     while !rl.window_should_close() {
+        script_update.call::<()>(lua_world_ref.clone()).unwrap();
         move_players(&rl, &world);
 
         let mut draw_handle = rl.begin_drawing(&thread);
@@ -27,7 +41,8 @@ fn main() {
     }
 }
 
-fn move_players(rl: &RaylibHandle, world: &World) {
+fn move_players(rl: &RaylibHandle, world: &Rc<RefCell<World>>) {
+    let world = world.borrow_mut();
     let players = world
         .entities
         .iter()
@@ -41,8 +56,8 @@ fn move_players(rl: &RaylibHandle, world: &World) {
         entity.data.position.x += xinput * 200f32 * rl.get_frame_time();
     });
 }
-
-fn draw_world<'a>(draw_handle: &mut RaylibDrawHandle<'a>, world: &World) {
+fn draw_world<'a>(draw_handle: &mut RaylibDrawHandle<'a>, world: &Rc<RefCell<World>>) {
+    let world = world.borrow();
     let entities = world
         .entities
         .iter()
