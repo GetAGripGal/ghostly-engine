@@ -1,2 +1,4 @@
 assets/* # All assets and scripts should be located in the assets directory and should not be included in the repo
+assets/**/*
 target/*
+target/**/*
