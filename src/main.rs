@@ -1,5 +1,5 @@
 use ghostly::{
-    lua::{LuaRuntime, api::LuaAPI, systems::LuaSystemManager},
+    lua::{LuaRuntime, api::LuaAPI},
     world::World,
 };
 
@@ -37,7 +37,7 @@ fn main() -> anyhow::Result<()> {
         lua_api.clone(),
     )?;
 
-    'main: loop { 
+    'main: loop {
         lua_runtime.systems().update(lua_api.clone());
 
         {
