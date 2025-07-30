@@ -6,10 +6,6 @@ use std::{
     rc::Rc,
 };
 
-/// The initial capacity of the entity store
-const ENTITY_STORE_INITIAL_CAPACITY: usize = 100; // NOTE(GetAGripGal): Just an arbitraty value, might be changed
-                                                  // after trial and externror.
-                                                  
 /// Represents the game world.
 #[derive(Debug, Default)]
 pub struct World {
@@ -84,7 +80,7 @@ impl EntityStore {
 
     /// Returns an iterator of the entity id's in the store.
     /// ### Returns
-    /// Creates an [`EntityIdIter`] containing the entity id'
+    /// Creates an [`EntityIdIter`] containing the entity id's.
     pub fn iter(&self) -> EntityIdIter {
         EntityIdIter::new(self)
     }
@@ -92,7 +88,7 @@ impl EntityStore {
 
 impl Default for EntityStore {
     fn default() -> Self {
-        Self(Vec::with_capacity(ENTITY_STORE_INITIAL_CAPACITY))
+        Self(Rc::new(RefCell::new(ENTITY_STORE_INITIAL_CAPACITY)))
     }
 }
 
