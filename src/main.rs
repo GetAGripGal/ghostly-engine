@@ -1,44 +1,78 @@
-use std::{cell::RefCell, rc::Rc};
-use ghostly::{lua::world::LuaWorld, world::World};
-use mlua::Lua;
+use ghostly::{
+    lua::{LuaRuntime, api::LuaAPI, systems::LuaSystemManager},
+    world::World,
+};
+
+use log::LevelFilter;
 use raylib::prelude::{Color, KeyboardKey, RaylibDraw, RaylibDrawHandle, RaylibHandle};
+use std::{cell::RefCell, rc::Rc};
 
-fn main() {
-    let world = {
-        let world = World::default();
-        Rc::new(RefCell::new(world))
-    };
+fn main() -> anyhow::Result<()> {
+    init_logger();
 
-    let lua = Lua::new();
-    let globals = lua.globals();
-
-    let lua_world_ref = LuaWorld(world.clone());
-    
-    let script = std::fs::read_to_string(format!("{}/assets/scripts/debug.lua", env!("CARGO_MANIFEST_DIR"))).unwrap();
-    lua.load(script).exec().unwrap();
-
-    let script_init: mlua::Function = globals.get("Init").unwrap();
-    let script_update: mlua::Function = globals.get("Update").unwrap();
-
-    let (mut rl, thread) = raylib::init()
-        .vsync()
+    let (rl, thread) = raylib::init()
         //.fullscreen()
-        .size(1280, 720)
+        //.vsync()
+        .size(1920, 1080)
         .title("Ghostly")
         .build();
+    log::info!("Initialized raylib window.");
 
-    script_init.call::<()>(lua_world_ref.clone()).unwrap();
+    let rl = Rc::new(RefCell::new(rl));
+    let thread = Rc::new(thread);
 
-    while !rl.window_should_close() {
-        script_update.call::<()>(lua_world_ref.clone()).unwrap();
-        move_players(&rl, &world);
+    let world = World::new_cell();
 
-        let mut draw_handle = rl.begin_drawing(&thread);
-        draw_handle.clear_background(Color::BLACK);
+    let lua_runtime = LuaRuntime::new();
+    let lua_api = LuaAPI::new(
+        rl.clone(),
+        thread.clone(),
+        world.clone(),
+        lua_runtime.systems_cell(), // TODO: This might need refactoring. LuaSystemManager should exist
+                                    // independant of LuaRuntime
+    );
 
-        draw_world(&mut draw_handle, &world);
-        draw_handle.draw_fps(0, 0);
+    lua_runtime.run_script(
+        &format!("{}/assets/scripts/debug.lua", env!("CARGO_MANIFEST_DIR")),
+        lua_api.clone(),
+    )?;
+
+    'main: loop { 
+        lua_runtime.systems().update(lua_api.clone());
+
+        {
+            let mut rl = rl.borrow_mut();
+            let mut draw_handle = rl.begin_drawing(&thread);
+            draw_handle.clear_background(Color::BLACK);
+
+            draw_world(&mut draw_handle, &world);
+            {
+                let world = world.borrow();
+                draw_handle.draw_text(
+                    &format!("Entity Count: {}", world.entities.len()),
+                    0,
+                    32,
+                    32,
+                    Color::LIGHTGREEN,
+                );
+            }
+            draw_handle.draw_fps(0, 0);
+        }
+
+        // temp fix
+        if rl.borrow().window_should_close() {
+            break 'main;
+        }
     }
+
+    Ok(())
+}
+
+/// Initialize the logger.
+fn init_logger() {
+    env_logger::Builder::from_default_env()
+        .filter_level(LevelFilter::Info) // I hold no secrets
+        .init();
 }
 
 fn move_players(rl: &RaylibHandle, world: &Rc<RefCell<World>>) {
@@ -56,6 +90,7 @@ fn move_players(rl: &RaylibHandle, world: &Rc<RefCell<World>>) {
         entity.data.position.x += xinput * 200f32 * rl.get_frame_time();
     });
 }
+
 fn draw_world<'a>(draw_handle: &mut RaylibDrawHandle<'a>, world: &Rc<RefCell<World>>) {
     let world = world.borrow();
     let entities = world
@@ -63,9 +98,36 @@ fn draw_world<'a>(draw_handle: &mut RaylibDrawHandle<'a>, world: &Rc<RefCell<Wor
         .iter()
         .filter(|entity| entity.enabled())
         .collect();
+
+    const OUTLINE_SIZE: f32 = 8.0;
     entities.iter().for_each(|id| {
         let entity = world.entities.get(*id).unwrap();
         let position = &entity.data.position;
-        draw_handle.draw_rectangle(position.x as i32, position.y as i32, 64, 64, Color::YELLOW);
+        draw_handle.draw_rectangle(
+            position.x as i32,
+            position.y as i32,
+            64,
+            64,
+            if id % 2 == 0 {
+                Color::BROWN
+            } else if id % 3 == 0 {
+                Color::DARKRED
+            } else {
+                Color::DARKBLUE
+            },
+        );
+        draw_handle.draw_rectangle(
+            (position.x + OUTLINE_SIZE) as i32,
+            (position.y + OUTLINE_SIZE) as i32,
+            64 - (OUTLINE_SIZE as i32 * 2),
+            64 - (OUTLINE_SIZE as i32 * 2),
+            if id % 2 == 0 {
+                Color::YELLOW
+            } else if id % 3 == 0 {
+                Color::RED
+            } else {
+                Color::BLUE
+            },
+        );
     });
 }
