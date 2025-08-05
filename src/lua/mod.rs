@@ -1,4 +1,8 @@
-use std::{cell::{Ref, RefCell, RefMut}, path::Path, rc::Rc};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    path::Path,
+    rc::Rc,
+};
 
 use mlua::{Lua, Table};
 
@@ -6,10 +10,11 @@ use crate::lua::{api::LuaAPI, systems::LuaSystemManager};
 
 pub mod api;
 pub mod entity;
+pub mod input;
+pub mod performance;
 pub mod systems;
 pub mod window;
 pub mod world;
-pub mod performance;
 
 /// The lua runtime for the engine.
 #[derive(Debug)]
@@ -21,9 +26,9 @@ pub struct LuaRuntime {
 impl LuaRuntime {
     /// Initialize the lua runtime.
     pub fn new() -> Self {
-        Self { 
-            lua: Lua::new(), 
-            systems: LuaSystemManager::new_cell() 
+        Self {
+            lua: Lua::new(),
+            systems: LuaSystemManager::new_cell(),
         }
     }
 
