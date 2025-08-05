@@ -8,7 +8,7 @@ use std::{
 
 /// The initial capacity of the entity store
 const ENTITY_STORE_INITIAL_CAPACITY: usize = 100; // NOTE(GetAGripGal): Just an arbitraty value, might be changed
-                                                  // after trial and externror.
+                                                  // after trial and error.
                                                   
 /// Represents the game world.
 #[derive(Debug, Default)]
@@ -87,6 +87,11 @@ impl EntityStore {
     /// Creates an [`EntityIdIter`] containing the entity id'
     pub fn iter(&self) -> EntityIdIter {
         EntityIdIter::new(self)
+    }
+
+    /// Removes all entities in the store.
+    pub fn clear(&mut self) {
+        self.0.clear()
     }
 }
 

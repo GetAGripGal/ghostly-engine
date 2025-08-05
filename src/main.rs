@@ -33,7 +33,10 @@ fn main() -> anyhow::Result<()> {
     );
 
     lua_runtime.run_script(
-        &format!("{}/assets/scripts/debug.lua", env!("CARGO_MANIFEST_DIR")),
+        &format!(
+            "{}/debug_assets/scripts/input.lua",
+            env!("CARGO_MANIFEST_DIR")
+        ),
         lua_api.clone(),
     )?;
 
@@ -73,22 +76,6 @@ fn init_logger() {
     env_logger::Builder::from_default_env()
         .filter_level(LevelFilter::Info) // I hold no secrets
         .init();
-}
-
-fn move_players(rl: &RaylibHandle, world: &Rc<RefCell<World>>) {
-    let world = world.borrow_mut();
-    let players = world
-        .entities
-        .iter()
-        .filter(|entity| entity.enabled())
-        .filter(|entity| entity.data.role == "player")
-        .collect();
-    players.iter().for_each(|id| {
-        let mut entity = world.entities.get_mut(*id).unwrap();
-        let xinput = -(rl.is_key_down(KeyboardKey::KEY_A) as i8 as f32)
-            + rl.is_key_down(KeyboardKey::KEY_D) as i8 as f32;
-        entity.data.position.x += xinput * 200f32 * rl.get_frame_time();
-    });
 }
 
 fn draw_world<'a>(draw_handle: &mut RaylibDrawHandle<'a>, world: &Rc<RefCell<World>>) {

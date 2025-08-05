@@ -5,10 +5,17 @@ use raylib::{RaylibHandle, RaylibThread};
 
 use crate::{
     lua::{
-        performance::LuaAPIPerformance, systems::{LuaAPISystemManager, LuaSystemManager}, window::LuaAPIWindow, world::LuaAPIWorld
+        input::LuaAPIInput, performance::LuaAPIPerformance, systems::{LuaAPISystemManager, LuaSystemManager}, window::LuaAPIWindow, world::LuaAPIWorld
     },
     world::World,
 };
+
+/// A macro that exposes a lua api to the runtime.
+macro_rules! expose_lua_api {
+    ($methods_userdata:ident, $api_name:expr, $api_field_name:ident) => {
+        $methods_userdata.add_method($api_name, |_, this, ()| Ok(this.$api_field_name.clone()));        
+    };
+}
 
 /// The api for the engine's lua runtime.
 #[derive(Debug, Clone)]
@@ -17,6 +24,7 @@ pub struct LuaAPI {
     window: LuaAPIWindow,
     systems: LuaAPISystemManager,
     performance: LuaAPIPerformance,
+    input: LuaAPIInput,
 }
 
 impl LuaAPI {
@@ -34,16 +42,18 @@ impl LuaAPI {
                 thread: thread.clone(),
             },
             systems: LuaAPISystemManager(systems),
-            performance: LuaAPIPerformance(rl.clone())
+            performance: LuaAPIPerformance(rl.clone()),
+            input: LuaAPIInput(rl.clone()),
         }
     }
 }
 
 impl UserData for LuaAPI {
     fn add_methods<M: mlua::UserDataMethods<Self>>(methods: &mut M) {
-        methods.add_method("world", |_, this, ()| Ok(this.world.clone()));
-        methods.add_method("window", |_, this, ()| Ok(this.window.clone()));
-        methods.add_method("systems", |_, this, ()| Ok(this.systems.clone()));
-        methods.add_method("performance", |_, this, ()| Ok(this.performance.clone()));
+        expose_lua_api!(methods, "world", world);
+        expose_lua_api!(methods, "window", window);
+        expose_lua_api!(methods, "systems", systems);
+        expose_lua_api!(methods, "performance", performance);
+        expose_lua_api!(methods, "input", input);
     }
 }
