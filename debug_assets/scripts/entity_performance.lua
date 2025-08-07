@@ -3,8 +3,10 @@
 ---
 
 SPAWN_ITER = 0.05
-local iter = 0
+ENTITY_SIZE = 16
+MINIMUM_FPS = 30
 
+local iter = 0
 local spawn_count = 0
 local velocity = {
 	x = 600,
@@ -19,8 +21,8 @@ local function spawn_entity(world)
 
 	entity.role = "performance"
 	entity.position = {
-		x = (spawn_count * 64),
-		y = -64,
+		x = (spawn_count * ENTITY_SIZE),
+		y = -ENTITY_SIZE,
 		z = 0
 	}
 end
@@ -32,11 +34,11 @@ local function move_entity(entity, bound_x, bound_y, delta)
 	end
 	local position = entity.position
 
-	if position.x > bound_x + 64 then
-		position.x = -64
+	if position.x > bound_x + ENTITY_SIZE then
+		position.x = -ENTITY_SIZE
 	end
 	if position.y > bound_y then
-		position.y = -64
+		position.y = -ENTITY_SIZE
 	end
 
 	position.x = position.x + velocity.x * delta

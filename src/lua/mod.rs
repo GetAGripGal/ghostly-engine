@@ -1,12 +1,6 @@
-use std::{
-    cell::{Ref, RefCell, RefMut},
-    path::Path,
-    rc::Rc,
-};
-
+use crate::lua::api::LuaAPI;
 use mlua::{Lua, Table};
-
-use crate::lua::{api::LuaAPI, systems::LuaSystemManager};
+use std::path::Path;
 
 pub mod api;
 pub mod entity;
@@ -20,16 +14,12 @@ pub mod world;
 #[derive(Debug)]
 pub struct LuaRuntime {
     lua: Lua,
-    systems: Rc<RefCell<LuaSystemManager>>,
 }
 
 impl LuaRuntime {
     /// Initialize the lua runtime.
     pub fn new() -> Self {
-        Self {
-            lua: Lua::new(),
-            systems: LuaSystemManager::new_cell(),
-        }
+        Self { lua: Lua::new() }
     }
 
     /// Load a script from a file and run it.
@@ -51,16 +41,6 @@ impl LuaRuntime {
             })
             .map_err(|e| anyhow::anyhow!("Failed to execute script `{:?}`: {}", path, e))?;
         Ok(())
-    }
-
-    /// Return a reference to the system manager.
-    pub fn systems(&self) -> Ref<LuaSystemManager> {
-        self.systems.borrow()
-    }
-
-    /// Return an ref-counted reference to the system manager's cell.
-    pub fn systems_cell(&self) -> Rc<RefCell<LuaSystemManager>> {
-        self.systems.clone()
     }
 }
 

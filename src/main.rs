@@ -1,10 +1,10 @@
 use ghostly::{
-    lua::{LuaRuntime, api::LuaAPI},
+    lua::{LuaRuntime, api::LuaAPI, systems::LuaSystemManager},
     world::World,
 };
 
 use log::LevelFilter;
-use raylib::prelude::{Color, KeyboardKey, RaylibDraw, RaylibDrawHandle, RaylibHandle};
+use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle};
 use std::{cell::RefCell, rc::Rc};
 
 fn main() -> anyhow::Result<()> {
@@ -12,7 +12,7 @@ fn main() -> anyhow::Result<()> {
 
     let (rl, thread) = raylib::init()
         //.fullscreen()
-        //.vsync()
+        .vsync()
         .size(1920, 1080)
         .title("Ghostly")
         .build();
@@ -23,25 +23,26 @@ fn main() -> anyhow::Result<()> {
 
     let world = World::new_cell();
 
+    let lua_systems = LuaSystemManager::new_cell();
     let lua_runtime = LuaRuntime::new();
     let lua_api = LuaAPI::new(
         rl.clone(),
         thread.clone(),
         world.clone(),
-        lua_runtime.systems_cell(), // TODO: This might need refactoring. LuaSystemManager should exist
-                                    // independant of LuaRuntime
+        lua_systems.clone(),
     );
 
-    lua_runtime.run_script(
-        &format!(
-            "{}/debug_assets/scripts/input.lua",
-            env!("CARGO_MANIFEST_DIR")
-        ),
-        lua_api.clone(),
-    )?;
+    let script_path = &format!(
+        "{}/debug_assets/scripts/input.lua",
+        env!("CARGO_MANIFEST_DIR")
+    );
+
+    log::info!("Running script: {}", script_path);
+    lua_runtime.run_script(script_path, lua_api.clone())?;
+    log::info!("Ran script: {}", script_path);
 
     'main: loop {
-        lua_runtime.systems().update(lua_api.clone());
+        lua_systems.borrow().update(lua_api.clone());
 
         {
             let mut rl = rl.borrow_mut();
